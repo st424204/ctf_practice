@@ -1,6 +1,7 @@
 from pwn import *
 
-r = process(["./a.out"])
+#r = process(["./a.out"])
+r = remote("localhost",10000)
 
 r.recvline()
 
