@@ -11,7 +11,7 @@ context.arch = "amd64"
 
 
 idx = 0
-flag = "TWCTF"
+flag = ""
 idx = len(flag)
 
 while True:
