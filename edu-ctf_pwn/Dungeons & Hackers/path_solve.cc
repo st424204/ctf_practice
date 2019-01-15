@@ -3,47 +3,43 @@
 #include <queue>
 #include <cstdlib>
 #include <iostream>
-
+#include <string>
 using namespace std;
 
 int moveOff[] = {-16, 16, -1, 1};
 char commands[] = "wsadefq";
 typedef uint8_t Pos;
-
-struct Node{
-	Pos pos;
-	vector<Pos> path;
-	vector<Pos> visit;
-};
-
-
+vector<Pos> parent(256);
+vector<Pos> visit(256);
+vector<Pos> direct(256);
 int main(int argc,char** argv){
 	if(argc<3) return 0;
 	Pos start = atoi(argv[1]);
 	Pos end = atoi(argv[2]);
-	queue<Node> q;
-	q.push({start,vector<Pos>(),vector<Pos>(256)});
+	queue<Pos> q;
+	q.push(start);
 	while(!q.empty()){
-		Node x = q.front();
+		Pos x = q.front();
 		q.pop();
-		if(x.pos == end){
-			for(auto p:x.path)
-				cout << commands[p];
+		if(x == end){
+			while(!q.empty()) q.pop();
 			break;
 		}
 		for(int i=0;i<4;i++){
-			Pos val = x.pos+moveOff[i];
-			if(mazeDir[x.pos][i] && x.visit[val] == 0){
-				x.visit[val] = 1;
-				x.path.push_back(i);
-				Pos tmp = x.pos;
-				x.pos = val;
-				q.push(x);
-				x.visit[val] = 0;
-				x.path.pop_back();
-				x.pos = tmp;
+			Pos val = x+moveOff[i];
+			if(mazeDir[x][i] && visit[val] == 0){
+				visit[val] = 1;
+				parent[val] = x;
+				direct[val] = i;
+				q.push(val);
 			}
 		}
 	}
+	string sol = "";
+	while(end != start){
+		sol = commands[direct[end]] + sol;
+		end = parent[end];
+	}
+	cout << sol;
 
 }
