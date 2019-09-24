@@ -1,5 +1,6 @@
-# Practice After Game with Poc
-
+# Practice  with Poc
+It is a javascript challenge come from InCTF 2019
+help me understand Spidermonkey structure
 ```javascript=
 blah = new Array()
 blah.push(new Array(1.1,1.1))
