@@ -78,9 +78,9 @@ remove(2)
 for i in range(5):
     buy(2,0x210,"a")
     remove(2)
-for i in range(3):
-    buy(2,0x390,"a")
-    remove(2)
+
+
+
 buy(2,0x3a0,"a")
 remove(2)
 
