@@ -1,0 +1,72 @@
+diff --git a/src/builtins/builtins-array.cc b/src/builtins/builtins-array.cc
+index 40accae57a..c718234d04 100644
+--- a/src/builtins/builtins-array.cc
++++ b/src/builtins/builtins-array.cc
+@@ -360,6 +360,28 @@ V8_WARN_UNUSED_RESULT Object GenericArrayPush(Isolate* isolate,
+ }
+ }  // namespace
+ 
++BUILTIN(ArrayOob){
++    uint32_t len = args.length();
++    if(len > 2) return ReadOnlyRoots(isolate).undefined_value();
++    Handle<JSReceiver> receiver;
++    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
++            isolate, receiver, Object::ToObject(isolate, args.receiver()));
++    Handle<JSArray> array = Handle<JSArray>::cast(receiver);
++    FixedDoubleArray elements = FixedDoubleArray::cast(array->elements());
++    uint32_t length = static_cast<uint32_t>(array->length().Number());
++    if(len == 1){
++        //read
++        return *(isolate->factory()->NewNumber(elements.get_scalar(length)));
++    }else{
++        //write
++        Handle<Object> value;
++        ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
++                isolate, value, Object::ToNumber(isolate, args.at<Object>(1)));
++        elements.set(length,value->Number());
++        return ReadOnlyRoots(isolate).undefined_value();
++    }
++}
++
+ BUILTIN(ArrayPush) {
+   HandleScope scope(isolate);
+   Handle<Object> receiver = args.receiver();
+diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
+index 1e2cfb9a31..47442eb545 100644
+--- a/src/builtins/builtins-definitions.h
++++ b/src/builtins/builtins-definitions.h
+@@ -350,6 +350,7 @@ namespace internal {
+   /* https://tc39.github.io/proposal-flatMap/#sec-Array.prototype.flatMap */   \
+   TFJ(ArrayPrototypeFlatMap, SharedFunctionInfo::kDontAdaptArgumentsSentinel)  \
+                                                                                \
++  CPP(ArrayOob)								       \
+   /* ArrayBuffer */                                                            \
+   /* ES #sec-arraybuffer-constructor */                                        \
+   CPP(ArrayBufferConstructor)                                                  \
+diff --git a/src/compiler/typer.cc b/src/compiler/typer.cc
+index 14ec8566e3..4eacf7de57 100644
+--- a/src/compiler/typer.cc
++++ b/src/compiler/typer.cc
+@@ -1740,7 +1740,8 @@ Type Typer::Visitor::JSCallTyper(Type fun, Typer* t) {
+       return Type::Receiver();
+     case Builtins::kArrayUnshift:
+       return t->cache_->kPositiveSafeInteger;
+-
++    case Builtins::kArrayOob:
++      return Type::Receiver();
+     // ArrayBuffer functions.
+     case Builtins::kArrayBufferIsView:
+       return Type::Boolean();
+diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
+index eff03ae384..906784375e 100644
+--- a/src/init/bootstrapper.cc
++++ b/src/init/bootstrapper.cc
+@@ -1722,6 +1722,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
+                           Builtins::kArrayPrototypeCopyWithin, 2, false);
+     SimpleInstallFunction(isolate_, proto, "fill",
+                           Builtins::kArrayPrototypeFill, 1, false);
++    SimpleInstallFunction(isolate_, proto, "oob",
++                          Builtins::kArrayOob,2,false);
+     SimpleInstallFunction(isolate_, proto, "find",
+                           Builtins::kArrayPrototypeFind, 1, false);
+     SimpleInstallFunction(isolate_, proto, "findIndex",
