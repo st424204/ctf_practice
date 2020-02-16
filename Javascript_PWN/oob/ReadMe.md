@@ -1,10 +1,13 @@
 # OOB
-Pointer compression is to reduce v8 memory usage. 簡單來說在64位元的系統下用最低四位的byte來表示pointer。當要derefer pointer的時候再加最高四位的bytes，號稱能省下40%的記憶體得使用。對於v8 PWN的影響，我找*CTF 2019 oob-v8一道入門的v8題目build在最新的v8練習
-
-我修改了原本題目的patch，讓他可以在最新的v8下使用
+Pointer compression is to reduce v8 memory usage.  
+簡單來說在64位元的系統下用最低四位的byte來表示pointer。  
+當要derefer pointer的時候再加最高四位的bytes，號稱能省下40%的記憶體得使用。  
+對於v8 PWN的影響，*CTF 2019 oob-v8一道入門的v8題目build在最新的v8練習 . 
+  
+我修改了原本題目的patch，讓他可以在最新的v8下使用 . 
 
 ## Patch
-```diff=
+```diff
 diff --git a/src/builtins/builtins-array.cc b/src/builtins/builtins-array.cc
 index 40accae57a..c718234d04 100644
 --- a/src/builtins/builtins-array.cc
@@ -80,9 +83,9 @@ index eff03ae384..906784375e 100644
 ```
 
 ## Debug
-Build出一個debug版的v8
+Build出一個debug版的v8 . 
 
-```bash=
+```bash
 fetch v8
 cd v8
 gclient sync
@@ -90,7 +93,7 @@ gclient sync
 ninja -C out.gn/x64.debug
 ```
 
-從source code看Smi跟Pointer如何表示
+從source code看Smi跟Pointer如何表示 . 
 * src/objects/objects.h
 ```c=
 // Formats of Object::ptr_:
@@ -101,7 +104,7 @@ ninja -C out.gn/x64.debug
 利用%DebugPrint跟gdb了解v8 Object Layout，可以看到 pointer 都是用4-byte表示
 ### Float Array Heap Layout
 
-```javascript=
+```javascript
 var float_arr = [1.1, 1.2, 1.3, 1.4];
 ```
 * %DebugPrint(float_arr)
@@ -133,12 +136,12 @@ DebugPrint: 0xc24080c5e95: [JSArray]
 
 ### Object Array Heap Layout
 
-```javascript=
+```javascript
 var obj = {"A":1};
 var obj_arr = [obj];
 ```
 * %DebugPrint(obj_arr)
-```javascript=
+```javascript
 DebugPrint: 0xc24080c5e5d: [JSArray]
  - map: 0x0c24082018e1 <Map(PACKED_ELEMENTS)> [FastProperties]
  - prototype: 0x0c24081c8f7d <JSArray[0]>
@@ -152,11 +155,11 @@ DebugPrint: 0xc24080c5e5d: [JSArray]
  }
 ```
 * x/4wx 0xc24080c5e5d-1
-```=
+```
 0xc24080c5e5c:	0x082018e1	0x080406e9	0x080c5e51	0x00000002
 ```
 * object array layout
-```=
+```
     map    |    properties    |    elements    |    length
 ```
 
@@ -173,7 +176,7 @@ DebugPrint: 0xc24080c5e5d: [JSArray]
 * 執行shellcode 完成 exploit
 
 exp.js
-```javascript=
+```javascript
 // Useful type conversion function
 var buf = new ArrayBuffer(8); 
 var f64_buf = new Float64Array(buf);
