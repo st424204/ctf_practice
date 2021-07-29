@@ -2,9 +2,13 @@
 
 [TOC]
 
+
+The challenge gave us a vulnerable Chromium browser ( which contains vulnerabilities in two different parts: the V8 engine and the Mojo interface ) and a vulnerable linux kernel module. We were asked to pwn the entire thing: the V8 engine, the Chrome sandbox and the kernel module -- all with a single fullchain exploit.
+
+
 ## Renderer RCE ( V8 )
 
-The challenge introduces a patch into V8 Javascript engine. It comments out three lines in function `TypedArrayPrototypeSetTypedArray`. 
+The challenge introduces a patch into V8 Javascript engine. It comments out three lines in function `TypedArrayPrototypeSetTypedArray`: 
 
 ```diff=
 diff --git a/src/builtins/typed-array-set.tq b/src/builtins/typed-array-set.tq
@@ -33,7 +37,7 @@ index b5c9dcb261..ac5ebe9913 100644
    // 13. Let targetType be the Element Type value in Table 62 for
 ```
 
-This function will be called if we want to set a TypedArray within a TypedArray in Javascript. From the patch, it comments out a overflow check when `srcLength` plus `targetOffset` is larger than `targetLength` ( see the following Javascript for example ). If the patch was not introduced, it will throw an exception when we want to set a TypedArray larger than the src TypedArray. But because of this patch, it we can bypass the overflow check and set the array with index 9 as the starting position. It's actually a very powerful out-of-bound write, and we use this vulnerability to overwrite `uint32`'s length to make us use this `uint32` to achieve out-of-bound read/write.
+This function will be called if we want to set a TypedArray within a TypedArray in Javascript. From the patch, it comments out a overflow check when `srcLength` plus `targetOffset` is larger than `targetLength` ( see the following Javascript for example ). If the patch was not introduced, it will throw an exception when we want to set a TypedArray larger than the src TypedArray. But because of this patch, we can bypass the overflow check and set the array with index 9 as the starting position. It's actually a very powerful out-of-bound write, and we use this vulnerability to overwrite `uint32`'s length to make us use this `uint32` to achieve out-of-bound read/write.
 
 ```javascript
 const uint32 = new Uint32Array([0x1000]);
@@ -446,7 +450,7 @@ function pwn_sbx() {
 
 ## Local Privilege Escalation ( kernel )
 
-In this part of challenge, it installs a kernel module which will expose a device at `/dev/ctf`. It implements several functions: `ctf_read`, `ctf_write`, `ctf_ioctl` and `ctf_open`. We can use `ctf_ioctl` to allocate a kernel heap buffer for `ctf_read` and `ctf_write`'s usage. `ctf_ioclt` also allow us to free a kernel heap buffer. 
+In this part of challenge, it installs a kernel module which will expose a device at `/dev/ctf`. It implements several functions: `ctf_read`, `ctf_write`, `ctf_ioctl` and `ctf_open`. We can use `ctf_ioctl` to allocate a kernel heap buffer for `ctf_read` and `ctf_write`'s usage. `ctf_ioctl` also allow us to free a kernel heap buffer. 
 
 There are two vulnerabilities we used for achieve local privilege escalation. Both are in `ctf_ioctl`. An uninitialized heap is used for allocating the buffer. Because it didn't zero out the buffer, we can use it for address leaking. Another vulnerability is use-after-free. When we free a kernel heap buffer, it didn't set its pointer to NULL, making it still accessible with `ctf_read` and `ctf_write`.
 
@@ -656,7 +660,3 @@ int dup2(int oldfd, int newfd){
 In order to combine our kernel exploit with the one in sandbox escape, we wrote a simple python script and convert `sc.bin` into Javascript format. The whole exploit.html is kind of large, you can check the entire exploit [here](https://github.com/st424204/ctf_practice/tree/master/GoogleCTF2021/Fullchain).
 
 flag: `CTF{next_stop_p2o_fda81a139a70c6d4}`
-
-
-
-
