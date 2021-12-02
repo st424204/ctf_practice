@@ -45,14 +45,14 @@ int main(int argc,char** argv){
 	read(sc,buf,0x100);
 	close(sc);
         int fd = CHECK(open(argv[2], O_RDWR | O_CREAT | O_EXCL, 0777));
-        ftruncate(fd,0x1);
+        write(fd,"\x90",1);
+	//ftruncate(fd,0x1);
         char* ptr = mmap(NULL, 0x1000, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-        msync(ptr,0x1000,MS_SYNC);
-        memset(ptr,'\x90',0x1);
+        //msync(ptr,0x1000,MS_SYNC);
+        //memset(ptr,'\x90',0x1);
 	memcpy(&ptr[1],buf,0x100);
 	close(fd);
-        exit(0);
-	
+        exit(0);	
 
 }
 
